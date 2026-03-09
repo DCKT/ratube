@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -45,7 +46,7 @@ export default function SearchScreen() {
 
   if (!baseUrl) {
     return (
-      <ThemedView style={styles.center}>
+      <SafeAreaView style={styles.center}>
         <ThemedText type="subtitle">Search</ThemedText>
         <ThemedText
           themeColor="textSecondary"
@@ -53,12 +54,12 @@ export default function SearchScreen() {
         >
           Configure your instance URL in Settings first
         </ThemedText>
-      </ThemedView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ThemedView style={styles.fill}>
+    <SafeAreaView style={styles.fill}>
       <TVFocusGuideView autoFocus style={{ flex: 1 }}>
         <View
           style={{
@@ -120,7 +121,7 @@ export default function SearchScreen() {
           />
         )}
       </TVFocusGuideView>
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 

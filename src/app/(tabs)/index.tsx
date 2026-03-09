@@ -1,5 +1,6 @@
 import React from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ChannelRow } from '@/components/channel-row';
 import { ThemedText } from '@/components/themed-text';
@@ -15,15 +16,15 @@ export default function HomeScreen() {
 
   if (!isLoaded) {
     return (
-      <ThemedView style={styles.center}>
+      <SafeAreaView style={styles.center}>
         <ActivityIndicator color={theme.tint} />
-      </ThemedView>
+      </SafeAreaView>
     );
   }
 
   if (!baseUrl) {
     return (
-      <ThemedView style={styles.center}>
+      <SafeAreaView style={styles.center}>
         <ThemedText type="subtitle">Welcome to InvidiousTV</ThemedText>
         <ThemedText
           themeColor="textSecondary"
@@ -31,13 +32,13 @@ export default function HomeScreen() {
         >
           Go to Settings to configure your Invidious instance URL
         </ThemedText>
-      </ThemedView>
+      </SafeAreaView>
     );
   }
 
   if (channels.length === 0) {
     return (
-      <ThemedView style={styles.center}>
+      <SafeAreaView style={styles.center}>
         <ThemedText type="subtitle">No channels yet</ThemedText>
         <ThemedText
           themeColor="textSecondary"
@@ -45,12 +46,12 @@ export default function HomeScreen() {
         >
           Add channels in Settings to see their latest videos here
         </ThemedText>
-      </ThemedView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ThemedView style={styles.fill}>
+    <SafeAreaView style={styles.fill}>
       <FlatList
         data={channels}
         keyExtractor={(item) => item.id}
@@ -63,7 +64,7 @@ export default function HomeScreen() {
         )}
         contentContainerStyle={{ paddingTop: spacing.four, paddingBottom: spacing.six }}
       />
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 

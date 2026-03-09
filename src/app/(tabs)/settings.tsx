@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -7,6 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -56,7 +58,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ThemedView style={styles.fill}>
+    <SafeAreaView style={styles.fill}>
       <FlatList
         data={[]}
         renderItem={null}
@@ -192,6 +194,17 @@ export default function SettingsScreen() {
                           },
                         ]}
                       >
+                        {ch.authorThumbnails?.length > 0 && (
+                          <Image
+                            source={{ uri: ch.authorThumbnails[0].url.startsWith('/') ? `${baseUrl}${ch.authorThumbnails[0].url}` : ch.authorThumbnails[0].url }}
+                            style={{
+                              width: 48 * scale,
+                              height: 48 * scale,
+                              borderRadius: 24 * scale,
+                              marginRight: spacing.two,
+                            }}
+                          />
+                        )}
                         <View style={{ flex: 1 }}>
                           <ThemedText style={{ fontSize: 16 * scale }}>
                             {ch.author}
@@ -237,7 +250,7 @@ export default function SettingsScreen() {
           </TVFocusGuideView>
         }
       />
-    </ThemedView>
+    </SafeAreaView>
   );
 }
 

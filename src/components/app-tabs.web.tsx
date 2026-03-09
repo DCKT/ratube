@@ -21,8 +21,7 @@ import { useScreenDimensions } from '@/hooks/use-screen-dimensions';
 
 export default function AppTabs() {
   return (
-    <Tabs>
-      <TabSlot style={{ height: '100%' }} />
+    <Tabs style={{ flex: 1 }}>
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="home" href="/" asChild>
@@ -36,6 +35,7 @@ export default function AppTabs() {
           </TabTrigger>
         </CustomTabList>
       </TabList>
+      <TabSlot style={{ flex: 1 }} />
     </Tabs>
   );
 }
@@ -88,7 +88,6 @@ const useTabStyles = () => {
   const { spacing } = useScreenDimensions();
   return StyleSheet.create({
     tabListContainer: {
-      position: 'absolute',
       width: '100%',
       padding: spacing.three,
       justifyContent: 'center',
