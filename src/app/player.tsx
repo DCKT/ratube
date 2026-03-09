@@ -25,7 +25,7 @@ function pickStream(detail: VideoDetail): FormatStream | undefined {
 
 export default function PlayerScreen() {
   const { videoId } = useLocalSearchParams<{ videoId: string }>();
-  const { apiClient } = useSettings();
+  const { apiClient, baseUrl } = useSettings();
   const theme = useTheme();
 
   const [detail, setDetail] = useState<VideoDetail | null>(null);
@@ -34,18 +34,30 @@ export default function PlayerScreen() {
   useEffect(() => {
     if (!apiClient || !videoId) return;
     let cancelled = false;
+    console.log(`[Player] Fetching video details for ${videoId}`);
     getVideoDetails(apiClient, videoId)
       .then((data) => {
-        if (!cancelled) setDetail(data);
+        if (cancelled) return;
+        console.log(`[Player] Got video: "${data.title}"`);
+        console.log(`[Player] formatStreams: ${data.formatStreams?.length ?? 0}`,
+          data.formatStreams?.map((s) => `${s.qualityLabel} ${s.container}`));
+        setDetail(data);
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message ?? 'Failed to load video');
+        if (cancelled) return;
+        console.error(`[Player] Error fetching video:`, err.message);
+        setError(err.message ?? 'Failed to load video');
       });
     return () => { cancelled = true; };
   }, [apiClient, videoId]);
 
   const stream = detail ? pickStream(detail) : undefined;
-  const streamUrl = stream?.url ?? null;
+  const rawUrl = stream?.url ?? null;
+  const streamUrl = rawUrl?.startsWith('/') ? `${baseUrl}${rawUrl}` : rawUrl;
+
+  if (stream) {
+    console.log(`[Player] Selected stream: ${stream.qualityLabel} ${stream.container}`);
+  }
 
   const player = useVideoPlayer(streamUrl, (p) => {
     p.play();
@@ -53,8 +65,16 @@ export default function PlayerScreen() {
 
   if (error) {
     return (
-      <View style={[styles.container, { backgroundColor: '#000' }]}>
-        <ThemedText style={{ color: '#fff' }}>Error: {error}</ThemedText>
+      <View style={[styles.container, { backgroundColor: '#000', padding: 40 }]}>
+        <ThemedText style={{ color: '#ff6b6b', fontSize: 24, fontWeight: '600', marginBottom: 16 }}>
+          Failed to load video
+        </ThemedText>
+        <ThemedText style={{ color: '#ccc', fontSize: 16, textAlign: 'center' }}>
+          {error}
+        </ThemedText>
+        <ThemedText style={{ color: '#888', fontSize: 14, marginTop: 12 }}>
+          Video ID: {videoId}
+        </ThemedText>
       </View>
     );
   }
