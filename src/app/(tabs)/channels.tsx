@@ -1,53 +1,17 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React from "react";
 import { ActivityIndicator, FlatList, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ChannelRow } from "@/components/channel-row";
 import { ThemedText } from "@/components/themed-text";
-import { VideoCard } from "@/components/video-card";
 import { useSettings } from "@/context/settings-context";
 import { useScreenDimensions } from "@/hooks/use-screen-dimensions";
 import { useTheme } from "@/hooks/use-theme";
-import { getChannelVideos } from "@/services/invidious";
-import type { Video } from "@/types/invidious";
 
-export default function HomeScreen() {
+export default function ChannelsScreen() {
   const { channels, apiClient, isLoaded, baseUrl } = useSettings();
-  const { width, spacing, scale } = useScreenDimensions();
+  const { spacing, scale } = useScreenDimensions();
   const theme = useTheme();
-
-  const [videos, setVideos] = useState<Video[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const numColumns = Math.max(1, Math.floor(width / 320));
-  const cardWidth = (width - spacing.four * 2) / numColumns;
-
-  const fetchAllVideos = useCallback(async () => {
-    if (!apiClient || channels.length === 0) {
-      setVideos([]);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    const results = await Promise.allSettled(
-      channels.map((ch) => getChannelVideos(apiClient, ch.id)),
-    );
-
-    const allVideos: Video[] = [];
-    for (const result of results) {
-      if (result.status === "fulfilled") {
-        allVideos.push(...result.value);
-      }
-    }
-
-    allVideos.sort((a, b) => (b.published ?? 0) - (a.published ?? 0));
-    setVideos(allVideos);
-    setLoading(false);
-  }, [apiClient, channels]);
-
-  useEffect(() => {
-    fetchAllVideos();
-  }, [fetchAllVideos]);
 
   if (!isLoaded) {
     return (
@@ -93,24 +57,19 @@ export default function HomeScreen() {
     );
   }
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator color={theme.tint} />
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.fill}>
       <FlatList
-        data={videos}
-        keyExtractor={(item) => item.videoId}
-        numColumns={numColumns}
-        key={numColumns}
-        renderItem={({ item }) => <VideoCard video={item} width={cardWidth} />}
+        data={channels}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <ChannelRow
+            channelId={item.id}
+            channelName={item.name}
+            apiClient={apiClient!}
+          />
+        )}
         contentContainerStyle={{
-          paddingHorizontal: spacing.four,
           paddingTop: spacing.four,
           paddingBottom: spacing.six,
         }}

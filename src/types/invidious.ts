@@ -12,6 +12,7 @@ export type Video = {
   authorId: string;
   lengthSeconds: number;
   videoThumbnails: Thumbnail[];
+  published: number;
   publishedText: string;
   viewCount: number;
 };
