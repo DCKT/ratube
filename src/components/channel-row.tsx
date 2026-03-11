@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, View } from "react-native";
 
-import { ThemedText } from './themed-text';
-import { TVFocusGuideView } from './tv-focus-guide';
-import { VideoCard } from './video-card';
+import { ThemedText } from "./themed-text";
+import { TVFocusGuideView } from "./tv-focus-guide";
+import { VideoCard } from "./video-card";
 
-import { useScreenDimensions } from '@/hooks/use-screen-dimensions';
-import { useTheme } from '@/hooks/use-theme';
-import { getChannelVideos } from '@/services/invidious';
-import type { Video } from '@/types/invidious';
+import { useScreenDimensions } from "@/hooks/use-screen-dimensions";
+import { useTheme } from "@/hooks/use-theme";
+import { getChannelVideos } from "@/services/invidious";
+import type { Video } from "@/types/invidious";
 
-import type { KyInstance } from 'ky';
+import type { KyInstance } from "ky";
 
 type Props = {
   channelId: string;
@@ -36,25 +36,27 @@ export function ChannelRow({ channelId, channelName, apiClient }: Props) {
         if (!cancelled) setVideos(data);
       })
       .catch((err) => {
-        if (!cancelled) setError(err.message ?? 'Failed to load');
+        if (!cancelled) setError(err.message ?? "Failed to load");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [apiClient, channelId]);
 
   return (
     <View style={[styles.container, { paddingVertical: spacing.three }]}>
-      <ThemedText
-        type="subtitle"
-        style={{ paddingHorizontal: spacing.four, marginBottom: spacing.two }}
-      >
+      <ThemedText type="subtitle" style={{ paddingHorizontal: spacing.four }}>
         {channelName}
       </ThemedText>
 
       {loading ? (
-        <ActivityIndicator color={theme.tint} style={{ marginVertical: spacing.four }} />
+        <ActivityIndicator
+          color={theme.tint}
+          style={{ marginVertical: spacing.four }}
+        />
       ) : error ? (
         <ThemedText
           themeColor="textSecondary"
@@ -69,9 +71,12 @@ export function ChannelRow({ channelId, channelName, apiClient }: Props) {
             data={videos}
             keyExtractor={(item) => item.videoId}
             renderItem={({ item }) => (
-              <VideoCard video={item} width={cardWidth} />
+              <VideoCard hideChannelName video={item} width={cardWidth} />
             )}
-            contentContainerStyle={{ paddingHorizontal: spacing.four }}
+            contentContainerStyle={{
+              paddingHorizontal: spacing.four,
+              paddingVertical: spacing.four,
+            }}
             showsHorizontalScrollIndicator={false}
           />
         </TVFocusGuideView>

@@ -1,13 +1,13 @@
-import React from 'react';
-import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React from "react";
+import { ActivityIndicator, FlatList, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ChannelRow } from '@/components/channel-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useSettings } from '@/context/settings-context';
-import { useScreenDimensions } from '@/hooks/use-screen-dimensions';
-import { useTheme } from '@/hooks/use-theme';
+import { ChannelRow } from "@/components/channel-row";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { useSettings } from "@/context/settings-context";
+import { useScreenDimensions } from "@/hooks/use-screen-dimensions";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function HomeScreen() {
   const { channels, apiClient, isLoaded, baseUrl } = useSettings();
@@ -28,7 +28,11 @@ export default function HomeScreen() {
         <ThemedText type="subtitle">Welcome to InvidiousTV</ThemedText>
         <ThemedText
           themeColor="textSecondary"
-          style={{ marginTop: spacing.two, fontSize: 16 * scale, textAlign: 'center' }}
+          style={{
+            marginTop: spacing.two,
+            fontSize: 16 * scale,
+            textAlign: "center",
+          }}
         >
           Go to Settings to configure your Invidious instance URL
         </ThemedText>
@@ -42,7 +46,11 @@ export default function HomeScreen() {
         <ThemedText type="subtitle">No channels yet</ThemedText>
         <ThemedText
           themeColor="textSecondary"
-          style={{ marginTop: spacing.two, fontSize: 16 * scale, textAlign: 'center' }}
+          style={{
+            marginTop: spacing.two,
+            fontSize: 16 * scale,
+            textAlign: "center",
+          }}
         >
           Add channels in Settings to see their latest videos here
         </ThemedText>
@@ -62,7 +70,10 @@ export default function HomeScreen() {
             apiClient={apiClient!}
           />
         )}
-        contentContainerStyle={{ paddingTop: spacing.four, paddingBottom: spacing.six }}
+        contentContainerStyle={{
+          paddingTop: spacing.four,
+          paddingBottom: spacing.six,
+        }}
       />
     </SafeAreaView>
   );
@@ -72,8 +83,8 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 32,
   },
 });

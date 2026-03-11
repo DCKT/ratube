@@ -9,6 +9,7 @@ import { useSettings } from "@/context/settings-context";
 import { useScreenDimensions } from "@/hooks/use-screen-dimensions";
 import { useTheme } from "@/hooks/use-theme";
 import type { Video } from "@/types/invidious";
+import { Spacing } from "@/constants/theme";
 
 function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -21,7 +22,8 @@ function formatDuration(seconds: number): string {
 
 function getThumbnailUrl(video: Video, baseUrl: string): string {
   if (!video.videoThumbnails?.length) return "";
-  const url = [...video.videoThumbnails].sort((a, b) => b.height - a.height)[0].url;
+  const url = [...video.videoThumbnails].sort((a, b) => b.height - a.height)[0]
+    .url;
   if (url.startsWith("/")) return `${baseUrl}${url}`;
   return url;
 }
@@ -29,9 +31,10 @@ function getThumbnailUrl(video: Video, baseUrl: string): string {
 type Props = {
   video: Video;
   width: number;
+  hideChannelName: boolean;
 };
 
-export function VideoCard({ video, width }: Props) {
+export function VideoCard({ video, width, hideChannelName = false }: Props) {
   const router = useRouter();
   const theme = useTheme();
   const { baseUrl } = useSettings();
@@ -53,6 +56,7 @@ export function VideoCard({ video, width }: Props) {
           borderColor: focused ? theme.tint : "transparent",
           borderWidth: 2 * scale,
           borderRadius: 8 * scale,
+          padding: Spacing.two,
         },
       ]}
     >
@@ -92,13 +96,15 @@ export function VideoCard({ video, width }: Props) {
       >
         {video.title}
       </ThemedText>
-      <ThemedText
-        themeColor="textSecondary"
-        numberOfLines={1}
-        style={{ fontSize: 12 * scale, marginTop: 2 * scale }}
-      >
-        {video.author}
-      </ThemedText>
+      {hideChannelName ? null : (
+        <ThemedText
+          themeColor="textSecondary"
+          numberOfLines={1}
+          style={{ fontSize: 12 * scale, marginTop: 2 * scale }}
+        >
+          {video.author}
+        </ThemedText>
+      )}
     </Pressable>
   );
 }

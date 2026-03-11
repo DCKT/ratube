@@ -36,7 +36,16 @@ const STORAGE_KEYS = {
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [baseUrl, setBaseUrlState] = useState("http://192.168.1.73:8888");
-  const [channels, setChannels] = useState<SavedChannel[]>([]);
+  const [channels, setChannels] = useState<SavedChannel[]>([
+    {
+      id: "UCKpOpDFWOZQ2QXjDkVU3WTQ",
+      name: "Overflow",
+    },
+    {
+      id: "UCsBjURrPoezykLs9EqgamOA",
+      name: "Fireship",
+    },
+  ]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
