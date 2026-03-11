@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ChannelCard } from '@/components/channel-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { TVFocusGuideView } from '@/components/tv-focus-guide';
@@ -16,8 +17,10 @@ import { VideoCard } from '@/components/video-card';
 import { useSettings } from '@/context/settings-context';
 import { useScreenDimensions } from '@/hooks/use-screen-dimensions';
 import { useTheme } from '@/hooks/use-theme';
-import { searchVideos } from '@/services/invidious';
-import type { Video } from '@/types/invidious';
+import { searchChannels, searchVideos } from '@/services/invidious';
+import type { Channel, Video } from '@/types/invidious';
+
+type SearchType = 'video' | 'channel';
 
 export default function SearchScreen() {
   const { apiClient, baseUrl } = useSettings();
@@ -25,7 +28,8 @@ export default function SearchScreen() {
   const theme = useTheme();
 
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Video[]>([]);
+  const [searchType, setSearchType] = useState<SearchType>('video');
+  const [results, setResults] = useState<Video[] | Channel[]>([]);
   const [loading, setLoading] = useState(false);
 
   const cardWidth = Math.min(width * 0.22, 280);
@@ -35,14 +39,22 @@ export default function SearchScreen() {
     if (!apiClient || !query.trim()) return;
     setLoading(true);
     try {
-      const data = await searchVideos(apiClient, query.trim());
+      const data =
+        searchType === 'video'
+          ? await searchVideos(apiClient, query.trim())
+          : await searchChannels(apiClient, query.trim());
       setResults(data);
     } catch {
       setResults([]);
     } finally {
       setLoading(false);
     }
-  }, [apiClient, query]);
+  }, [apiClient, query, searchType]);
+
+  const handleSearchTypeChange = useCallback((type: SearchType) => {
+    setSearchType(type);
+    setResults([]);
+  }, []);
 
   if (!baseUrl) {
     return (
@@ -66,12 +78,13 @@ export default function SearchScreen() {
             flexDirection: 'row',
             gap: spacing.two,
             padding: spacing.four,
+            paddingBottom: spacing.two,
           }}
         >
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search videos..."
+            placeholder={searchType === 'video' ? 'Search videos...' : 'Search channels...'}
             placeholderTextColor={theme.textSecondary}
             autoCapitalize="none"
             autoCorrect={false}
@@ -104,17 +117,61 @@ export default function SearchScreen() {
           </Pressable>
         </View>
 
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: spacing.two,
+            paddingHorizontal: spacing.four,
+            paddingBottom: spacing.two,
+          }}
+        >
+          {(['video', 'channel'] as const).map((type) => {
+            const active = searchType === type;
+            return (
+              <Pressable
+                key={type}
+                onPress={() => handleSearchTypeChange(type)}
+                style={({ focused }) => ({
+                  backgroundColor: active ? theme.tint : theme.backgroundElement,
+                  borderRadius: 20 * scale,
+                  paddingHorizontal: spacing.three,
+                  paddingVertical: spacing.one,
+                  borderWidth: 2 * scale,
+                  borderColor: focused ? theme.tint : 'transparent',
+                  transform: [{ scale: focused ? 1.05 : 1 }],
+                })}
+              >
+                <ThemedText
+                  style={{
+                    color: active ? '#fff' : theme.text,
+                    fontSize: 14 * scale,
+                    fontWeight: '600',
+                  }}
+                >
+                  {type === 'video' ? 'Videos' : 'Channels'}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {loading ? (
           <ActivityIndicator color={theme.tint} style={{ marginTop: spacing.four }} />
         ) : (
           <FlatList
             data={results}
-            keyExtractor={(item) => item.videoId}
+            keyExtractor={(item) =>
+              'videoId' in item ? item.videoId : item.authorId
+            }
             numColumns={numColumns}
             key={numColumns}
             renderItem={({ item }) => (
               <View style={{ margin: spacing.two }}>
-                <VideoCard video={item} width={cardWidth} />
+                {'videoId' in item ? (
+                  <VideoCard video={item} width={cardWidth} />
+                ) : (
+                  <ChannelCard channel={item} width={cardWidth} />
+                )}
               </View>
             )}
             contentContainerStyle={{ paddingHorizontal: spacing.four, paddingBottom: spacing.six }}

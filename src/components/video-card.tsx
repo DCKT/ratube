@@ -31,7 +31,7 @@ function getThumbnailUrl(video: Video, baseUrl: string): string {
 type Props = {
   video: Video;
   width: number;
-  hideChannelName: boolean;
+  hideChannelName?: boolean;
 };
 
 export function VideoCard({ video, width, hideChannelName = false }: Props) {
