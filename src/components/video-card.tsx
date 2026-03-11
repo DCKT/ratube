@@ -105,6 +105,15 @@ export function VideoCard({ video, width, hideChannelName = false }: Props) {
           {video.author}
         </ThemedText>
       )}
+      {video.publishedText ? (
+        <ThemedText
+          themeColor="textSecondary"
+          numberOfLines={1}
+          style={{ fontSize: 11 * scale, marginTop: 2 * scale }}
+        >
+          {video.publishedText}
+        </ThemedText>
+      ) : null}
     </Pressable>
   );
 }
