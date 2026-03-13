@@ -1,0 +1,10 @@
+{
+  "name": "invidioustv-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "bun run index.ts",
+    "dev": "bun --watch index.ts"
+  },
+  "dependencies": {}
+}

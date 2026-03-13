@@ -8,62 +8,19 @@ import { ThemedText } from '@/components/themed-text';
 import { useSettings } from '@/context/settings-context';
 import { useTheme } from '@/hooks/use-theme';
 import { getVideoDetails } from '@/services/invidious';
-import type { FormatStream, VideoDetail } from '@/types/invidious';
-
-/** Pick the best progressive (muxed) stream as fallback. */
-function pickProgressiveStream(detail: VideoDetail): FormatStream | undefined {
-  const progressive = detail.formatStreams ?? [];
-  const mp4s = progressive.filter((s) => s.container === 'mp4');
-  if (mp4s.length > 0) {
-    mp4s.sort((a, b) => {
-      const aH = parseInt(a.qualityLabel) || 0;
-      const bH = parseInt(b.qualityLabel) || 0;
-      return bH - aH;
-    });
-    return mp4s[0];
-  }
-  return progressive[0];
-}
-
-/** Pick the best adaptive video-only stream (MP4/H.264, highest resolution). */
-function pickAdaptiveVideo(detail: VideoDetail): FormatStream | undefined {
-  const adaptive = detail.adaptiveFormats ?? [];
-  const videos = adaptive.filter(
-    (s) => s.type.startsWith('video/mp4') && s.type.includes('avc1')
-  );
-  if (videos.length === 0) return undefined;
-  videos.sort((a, b) => {
-    const aH = parseInt(a.qualityLabel) || 0;
-    const bH = parseInt(b.qualityLabel) || 0;
-    return bH - aH;
-  });
-  return videos[0];
-}
-
-/** Pick the best adaptive audio-only stream (MP4/AAC). */
-function pickAdaptiveAudio(detail: VideoDetail): FormatStream | undefined {
-  const adaptive = detail.adaptiveFormats ?? [];
-  const audios = adaptive.filter(
-    (s) => s.type.startsWith('audio/mp4') && s.type.includes('mp4a')
-  );
-  if (audios.length === 0) return undefined;
-  // Pick highest bitrate — last in the list is usually highest
-  return audios[audios.length - 1];
-}
-
-function resolveUrl(rawUrl: string, baseUrl: string): string {
-  return rawUrl.startsWith('/') ? `${baseUrl}${rawUrl}` : rawUrl;
-}
+import type { VideoDetail } from '@/types/invidious';
 
 export default function PlayerScreen() {
   const { videoId } = useLocalSearchParams<{ videoId: string }>();
-  const { apiClient, baseUrl } = useSettings();
+  const { apiClient, proxyUrl } = useSettings();
   const theme = useTheme();
 
   const [detail, setDetail] = useState<VideoDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [useMuxedFallback, setUseMuxedFallback] = useState(false);
   const audioSyncedRef = useRef(false);
 
+  // Fetch metadata from Invidious (title, etc.)
   useEffect(() => {
     if (!apiClient || !videoId) return;
     let cancelled = false;
@@ -72,57 +29,29 @@ export default function PlayerScreen() {
       .then((data) => {
         if (cancelled) return;
         console.log(`[Player] Got video: "${data.title}"`);
-        console.log(
-          `[Player] formatStreams: ${data.formatStreams?.length ?? 0}`,
-          data.formatStreams?.map((s) => `${s.qualityLabel} ${s.container}`)
-        );
-        console.log(
-          `[Player] adaptive video: ${data.adaptiveFormats?.filter((s) => s.type.startsWith('video/')).length ?? 0}`,
-          data.adaptiveFormats
-            ?.filter((s) => s.type.startsWith('video/'))
-            .map((s) => `${s.qualityLabel} ${s.type.slice(0, 40)} [${s.container}]`)
-        );
-        console.log(
-          `[Player] adaptive audio: ${data.adaptiveFormats?.filter((s) => s.type.startsWith('audio/')).length ?? 0}`,
-          data.adaptiveFormats
-            ?.filter((s) => s.type.startsWith('audio/'))
-            .map((s) => `${s.type.slice(0, 40)} [${s.container}]`)
-        );
         setDetail(data);
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error(`[Player] Error fetching video:`, err.message);
-        setError(err.message ?? 'Failed to load video');
+        console.error(`[Player] Error fetching metadata:`, err.message);
+        // Metadata failure is non-fatal — we can still play via proxy
       });
     return () => {
       cancelled = true;
     };
   }, [apiClient, videoId]);
 
-  // Determine streams
-  const adaptiveVideo = detail ? pickAdaptiveVideo(detail) : undefined;
-  const adaptiveAudio = detail ? pickAdaptiveAudio(detail) : undefined;
-  const useDualStream = !!(adaptiveVideo && adaptiveAudio);
-  const progressiveStream = detail ? pickProgressiveStream(detail) : undefined;
+  // Build proxy stream URLs
+  const videoUrl = useMuxedFallback
+    ? `${proxyUrl}/stream/muxed/${videoId}`
+    : `${proxyUrl}/stream/video/${videoId}`;
 
-  const videoUrl = useDualStream
-    ? resolveUrl(adaptiveVideo!.url, baseUrl)
-    : progressiveStream
-      ? resolveUrl(progressiveStream.url, baseUrl)
-      : null;
+  const audioUrl = useMuxedFallback ? null : `${proxyUrl}/stream/audio/${videoId}`;
+  const useDualStream = !useMuxedFallback;
 
-  const audioUrl = useDualStream ? resolveUrl(adaptiveAudio!.url, baseUrl) : null;
-
-  if (detail && useDualStream) {
-    console.log(
-      `[Player] Dual-stream: video=${adaptiveVideo!.qualityLabel} (${adaptiveVideo!.type.slice(0, 30)}), audio=${adaptiveAudio!.type.slice(0, 30)}`
-    );
-  } else if (detail && progressiveStream) {
-    console.log(
-      `[Player] Progressive fallback: ${progressiveStream.qualityLabel} ${progressiveStream.container}`
-    );
-  }
+  console.log(
+    `[Player] Mode: ${useDualStream ? 'dual-stream (video+audio)' : 'muxed fallback'}`
+  );
 
   // Video player — muted when using dual-stream
   const player = useVideoPlayer(videoUrl, (p) => {
@@ -134,6 +63,22 @@ export default function PlayerScreen() {
 
   // Audio player for dual-stream mode
   const audioPlayer = useAudioPlayer(audioUrl);
+
+  // Detect video error and fall back to muxed
+  useEffect(() => {
+    if (useMuxedFallback) return;
+
+    const subscription = player.addListener('statusChange', (payload) => {
+      if (payload.status === 'error' && !useMuxedFallback) {
+        console.log('[Player] Adaptive stream failed — falling back to muxed');
+        setUseMuxedFallback(true);
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [player, useMuxedFallback]);
 
   // Sync audio with video playback
   useEffect(() => {
@@ -188,22 +133,6 @@ export default function PlayerScreen() {
     );
   }
 
-  if (!detail) {
-    return (
-      <View style={[styles.container, { backgroundColor: '#000' }]}>
-        <ActivityIndicator color={theme.tint} size="large" />
-      </View>
-    );
-  }
-
-  if (!videoUrl) {
-    return (
-      <View style={[styles.container, { backgroundColor: '#000' }]}>
-        <ThemedText style={{ color: '#fff' }}>No playable stream found</ThemedText>
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: '#000' }]}>
       <VideoView
@@ -212,6 +141,11 @@ export default function PlayerScreen() {
         nativeControls
         contentFit="contain"
       />
+      {detail && (
+        <View style={styles.titleOverlay} pointerEvents="none">
+          <ThemedText style={styles.titleText}>{detail.title}</ThemedText>
+        </View>
+      )}
     </View>
   );
 }
@@ -221,5 +155,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  titleOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  titleText: {
+    color: '#fff',
+    fontSize: 14,
+    textShadowColor: '#000',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });

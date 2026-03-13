@@ -20,12 +20,13 @@ import { searchChannels } from '@/services/invidious';
 import type { Channel } from '@/types/invidious';
 
 export default function SettingsScreen() {
-  const { baseUrl, setBaseUrl, channels, addChannel, removeChannel, apiClient } =
+  const { baseUrl, setBaseUrl, proxyUrl, setProxyUrl, channels, addChannel, removeChannel, apiClient } =
     useSettings();
   const { spacing, scale } = useScreenDimensions();
   const theme = useTheme();
 
   const [urlInput, setUrlInput] = useState(baseUrl);
+  const [proxyUrlInput, setProxyUrlInput] = useState(proxyUrl);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Channel[]>([]);
   const [searching, setSearching] = useState(false);
@@ -33,6 +34,10 @@ export default function SettingsScreen() {
   const handleSaveUrl = useCallback(() => {
     setBaseUrl(urlInput);
   }, [urlInput, setBaseUrl]);
+
+  const handleSaveProxyUrl = useCallback(() => {
+    setProxyUrl(proxyUrlInput);
+  }, [proxyUrlInput, setProxyUrl]);
 
   const handleSearch = useCallback(async () => {
     if (!apiClient || !searchQuery.trim()) return;
@@ -82,6 +87,40 @@ export default function SettingsScreen() {
               />
               <Pressable
                 onPress={handleSaveUrl}
+                style={({ focused }) => [
+                  styles.button,
+                  {
+                    backgroundColor: theme.tint,
+                    borderRadius: 8 * scale,
+                    paddingHorizontal: spacing.three,
+                    paddingVertical: spacing.two,
+                    transform: [{ scale: focused ? 1.05 : 1 }],
+                  },
+                ]}
+              >
+                <ThemedText style={{ color: '#fff', fontSize: 16 * scale, fontWeight: '600' }}>
+                  Save
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            {/* Stream Proxy URL */}
+            <ThemedText type="subtitle" style={{ marginBottom: spacing.two }}>
+              Stream Proxy URL
+            </ThemedText>
+            <View style={{ flexDirection: 'row', gap: spacing.two, marginBottom: spacing.four }}>
+              <TextInput
+                value={proxyUrlInput}
+                onChangeText={setProxyUrlInput}
+                placeholder="http://192.168.1.73:3000"
+                placeholderTextColor={theme.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={[inputStyle, { flex: 1 }]}
+                onSubmitEditing={handleSaveProxyUrl}
+              />
+              <Pressable
+                onPress={handleSaveProxyUrl}
                 style={({ focused }) => [
                   styles.button,
                   {
