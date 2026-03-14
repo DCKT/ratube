@@ -17,6 +17,7 @@ export default function PlayerScreen() {
   const [error, setError] = useState<string | null>(null);
   const [useMuxedFallback, setUseMuxedFallback] = useState(false);
   const audioSyncedRef = useRef(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // Fetch metadata from Invidious (title, etc.)
   useEffect(() => {
@@ -64,6 +65,22 @@ export default function PlayerScreen() {
   // Audio player for dual-stream mode
   const audioPlayer = useAudioPlayer(audioUrl);
 
+  // Eagerly stop players on unmount to avoid delay when leaving the screen
+  useEffect(() => {
+    return () => {
+      try {
+        player.pause();
+        player.replace(null);
+      } catch {}
+      try {
+        if (audioPlayer) {
+          audioPlayer.pause();
+          audioPlayer.replace(null);
+        }
+      } catch {}
+    };
+  }, [player, audioPlayer]);
+
   // Detect video error and fall back to muxed
   useEffect(() => {
     if (useMuxedFallback) return;
@@ -103,6 +120,7 @@ export default function PlayerScreen() {
     if (!useDualStream || !audioPlayer) return;
 
     const subscription = player.addListener("playingChange", (payload) => {
+      setIsPlaying(payload.isPlaying);
       if (payload.isPlaying) {
         const videoTime = player.currentTime;
         console.log(
@@ -156,7 +174,7 @@ export default function PlayerScreen() {
         nativeControls
         contentFit="contain"
       />
-      {detail && !player.playing ? (
+      {detail && !isPlaying ? (
         <View style={styles.titleOverlay} pointerEvents="none">
           <ThemedText style={styles.titleText}>{detail.title}</ThemedText>
         </View>
@@ -182,7 +200,8 @@ const styles = StyleSheet.create({
   },
   titleText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 28,
+    fontWeight: 600,
     textShadowColor: "#000",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
