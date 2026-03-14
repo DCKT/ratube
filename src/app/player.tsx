@@ -1,19 +1,17 @@
-import { useAudioPlayer } from 'expo-audio';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useAudioPlayer } from "expo-audio";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { useLocalSearchParams } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
-import { ThemedText } from '@/components/themed-text';
-import { useSettings } from '@/context/settings-context';
-import { useTheme } from '@/hooks/use-theme';
-import { getVideoDetails } from '@/services/invidious';
-import type { VideoDetail } from '@/types/invidious';
+import { ThemedText } from "@/components/themed-text";
+import { useSettings } from "@/context/settings-context";
+import type { VideoDetail } from "@/types/invidious";
+import { getVideoDetails } from "@/services/invidious";
 
 export default function PlayerScreen() {
   const { videoId } = useLocalSearchParams<{ videoId: string }>();
   const { apiClient, proxyUrl } = useSettings();
-  const theme = useTheme();
 
   const [detail, setDetail] = useState<VideoDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,11 +44,13 @@ export default function PlayerScreen() {
     ? `${proxyUrl}/stream/muxed/${videoId}`
     : `${proxyUrl}/stream/video/${videoId}`;
 
-  const audioUrl = useMuxedFallback ? null : `${proxyUrl}/stream/audio/${videoId}`;
+  const audioUrl = useMuxedFallback
+    ? null
+    : `${proxyUrl}/stream/audio/${videoId}`;
   const useDualStream = !useMuxedFallback;
 
   console.log(
-    `[Player] Mode: ${useDualStream ? 'dual-stream (video+audio)' : 'muxed fallback'}`
+    `[Player] Mode: ${useDualStream ? "dual-stream (video+audio)" : "muxed fallback"}`,
   );
 
   // Video player — muted when using dual-stream
@@ -68,9 +68,9 @@ export default function PlayerScreen() {
   useEffect(() => {
     if (useMuxedFallback) return;
 
-    const subscription = player.addListener('statusChange', (payload) => {
-      if (payload.status === 'error' && !useMuxedFallback) {
-        console.log('[Player] Adaptive stream failed — falling back to muxed');
+    const subscription = player.addListener("statusChange", (payload) => {
+      if (payload.status === "error" && !useMuxedFallback) {
+        console.log("[Player] Adaptive stream failed — falling back to muxed");
         setUseMuxedFallback(true);
       }
     });
@@ -85,10 +85,10 @@ export default function PlayerScreen() {
     if (!useDualStream || !audioPlayer) return;
     audioSyncedRef.current = false;
 
-    const subscription = player.addListener('statusChange', (payload) => {
-      if (payload.status === 'readyToPlay' && !audioSyncedRef.current) {
+    const subscription = player.addListener("statusChange", (payload) => {
+      if (payload.status === "readyToPlay" && !audioSyncedRef.current) {
         audioSyncedRef.current = true;
-        console.log('[Player] Video ready — starting audio');
+        console.log("[Player] Video ready — starting audio");
         audioPlayer.play();
       }
     });
@@ -102,12 +102,16 @@ export default function PlayerScreen() {
   useEffect(() => {
     if (!useDualStream || !audioPlayer) return;
 
-    const subscription = player.addListener('playingChange', (payload) => {
+    const subscription = player.addListener("playingChange", (payload) => {
       if (payload.isPlaying) {
-        console.log('[Player] Video resumed — resuming audio');
+        const videoTime = player.currentTime;
+        console.log(
+          `[Player] Video resumed at ${videoTime}s — syncing and resuming audio`,
+        );
+        audioPlayer.seekTo(videoTime);
         audioPlayer.play();
       } else {
-        console.log('[Player] Video paused — pausing audio');
+        console.log("[Player] Video paused — pausing audio");
         audioPlayer.pause();
       }
     });
@@ -119,14 +123,25 @@ export default function PlayerScreen() {
 
   if (error) {
     return (
-      <View style={[styles.container, { backgroundColor: '#000', padding: 40 }]}>
+      <View
+        style={[styles.container, { backgroundColor: "#000", padding: 40 }]}
+      >
         <ThemedText
-          style={{ color: '#ff6b6b', fontSize: 24, fontWeight: '600', marginBottom: 16 }}
+          style={{
+            color: "#ff6b6b",
+            fontSize: 24,
+            fontWeight: "600",
+            marginBottom: 16,
+          }}
         >
           Failed to load video
         </ThemedText>
-        <ThemedText style={{ color: '#ccc', fontSize: 16, textAlign: 'center' }}>{error}</ThemedText>
-        <ThemedText style={{ color: '#888', fontSize: 14, marginTop: 12 }}>
+        <ThemedText
+          style={{ color: "#ccc", fontSize: 16, textAlign: "center" }}
+        >
+          {error}
+        </ThemedText>
+        <ThemedText style={{ color: "#888", fontSize: 14, marginTop: 12 }}>
           Video ID: {videoId}
         </ThemedText>
       </View>
@@ -134,18 +149,18 @@ export default function PlayerScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: '#000' }]}>
+    <View style={[styles.container, { backgroundColor: "#000" }]}>
       <VideoView
         player={player}
         style={StyleSheet.absoluteFill}
         nativeControls
         contentFit="contain"
       />
-      {detail && (
+      {detail && !player.playing ? (
         <View style={styles.titleOverlay} pointerEvents="none">
           <ThemedText style={styles.titleText}>{detail.title}</ThemedText>
         </View>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -153,11 +168,11 @@ export default function PlayerScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   titleOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -166,9 +181,9 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   titleText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
-    textShadowColor: '#000',
+    textShadowColor: "#000",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
