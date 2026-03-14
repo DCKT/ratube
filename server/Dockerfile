@@ -2,8 +2,8 @@ FROM oven/bun:1 AS base
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends python3 ffmpeg && \
-    bun install -g yt-dlp && \
+    apt-get install -y --no-install-recommends python3 python3-pip ffmpeg && \
+    python3 -m pip install --break-system-packages -U "yt-dlp[default]" && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY package.json bun.lock* ./
