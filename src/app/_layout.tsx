@@ -24,6 +24,10 @@ export default function RootLayout() {
             name="player"
             options={{ presentation: 'fullScreenModal' }}
           />
+          <Stack.Screen
+            name="logs"
+            options={{ presentation: 'fullScreenModal' }}
+          />
         </Stack>
       </SettingsProvider>
     </ThemeProvider>

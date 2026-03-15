@@ -16,8 +16,11 @@ export default function PlayerScreen() {
   const [detail, setDetail] = useState<VideoDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [useMuxedFallback, setUseMuxedFallback] = useState(false);
+  const useMuxedFallbackRef = useRef(false);
   const audioSyncedRef = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [buffering, setBuffering] = useState(true);
+  const [statusMessage, setStatusMessage] = useState("Loading stream...");
 
   // Fetch metadata from Invidious (title, etc.)
   useEffect(() => {
@@ -81,21 +84,40 @@ export default function PlayerScreen() {
     };
   }, [player, audioPlayer]);
 
-  // Detect video error and fall back to muxed
+  // Track player status for buffering indicator and error handling
   useEffect(() => {
-    if (useMuxedFallback) return;
-
     const subscription = player.addListener("statusChange", (payload) => {
-      if (payload.status === "error" && !useMuxedFallback) {
-        console.log("[Player] Adaptive stream failed — falling back to muxed");
-        setUseMuxedFallback(true);
+      console.log(`[Player] Status: ${payload.status}`, payload.error?.message);
+      switch (payload.status) {
+        case "loading":
+          setBuffering(true);
+          setStatusMessage("Loading stream...");
+          break;
+        case "readyToPlay":
+          setBuffering(false);
+          break;
+        case "error": {
+          const msg = payload.error?.message ?? "Unknown error";
+          if (!useMuxedFallbackRef.current) {
+            console.log(
+              "[Player] Adaptive stream failed — falling back to muxed",
+            );
+            setStatusMessage("Retrying with muxed stream...");
+            useMuxedFallbackRef.current = true;
+            setUseMuxedFallback(true);
+          } else {
+            setBuffering(false);
+            setError(msg);
+          }
+          break;
+        }
       }
     });
 
     return () => {
       subscription.remove();
     };
-  }, [player, useMuxedFallback]);
+  }, [player]);
 
   // Sync audio with video playback
   useEffect(() => {
@@ -174,6 +196,11 @@ export default function PlayerScreen() {
         nativeControls
         contentFit="contain"
       />
+      {buffering ? (
+        <View style={styles.bufferingOverlay} pointerEvents="none">
+          <ThemedText style={styles.bufferingText}>{statusMessage}</ThemedText>
+        </View>
+      ) : null}
       {detail && !isPlaying ? (
         <View style={styles.titleOverlay} pointerEvents="none">
           <ThemedText style={styles.titleText}>{detail.title}</ThemedText>
@@ -205,5 +232,17 @@ const styles = StyleSheet.create({
     textShadowColor: "#000",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  bufferingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    marginTop: 20,
+  },
+  bufferingText: {
+    color: "#ccc",
+    fontSize: 18,
+    marginTop: 36,
   },
 });

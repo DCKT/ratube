@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -137,6 +138,30 @@ export default function SettingsScreen() {
                 </ThemedText>
               </Pressable>
             </View>
+
+            {/* Proxy Logs */}
+            {proxyUrl ? (
+              <View style={{ marginBottom: spacing.four }}>
+                <Pressable
+                  onPress={() => router.push('/logs')}
+                  style={({ focused }) => [
+                    styles.button,
+                    {
+                      backgroundColor: theme.backgroundElement,
+                      borderRadius: 8 * scale,
+                      paddingHorizontal: spacing.three,
+                      paddingVertical: spacing.two,
+                      alignSelf: 'flex-start',
+                      transform: [{ scale: focused ? 1.05 : 1 }],
+                    },
+                  ]}
+                >
+                  <ThemedText style={{ fontSize: 16 * scale, fontWeight: '600' }}>
+                    View Proxy Logs
+                  </ThemedText>
+                </Pressable>
+              </View>
+            ) : null}
 
             {/* Subscribed Channels */}
             <ThemedText type="subtitle" style={{ marginBottom: spacing.two }}>

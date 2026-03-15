@@ -1,4 +1,5 @@
 import { type ResolvedFormats, type YtDlpFormat, pickFormats } from "./formats";
+import { log, logError } from "./logger";
 
 type CacheEntry = {
   formats: ResolvedFormats;
@@ -18,7 +19,7 @@ function cleanExpired() {
 
 async function runYtDlp(videoId: string): Promise<ResolvedFormats> {
   const url = `https://www.youtube.com/watch?v=${videoId}`;
-  console.log(`[yt-dlp] Resolving formats for ${videoId}`);
+  log(`[yt-dlp] Resolving formats for ${videoId}`);
 
   const proc = Bun.spawn(["yt-dlp", "-j", "--no-warnings", url], {
     stdout: "pipe",
@@ -33,7 +34,7 @@ async function runYtDlp(videoId: string): Promise<ResolvedFormats> {
   const exitCode = await proc.exited;
 
   if (exitCode !== 0) {
-    console.error(`[yt-dlp] Failed for ${videoId}: ${stderr.trim()}`);
+    logError(`[yt-dlp] Failed for ${videoId}: ${stderr.trim()}`);
     throw new Error(`yt-dlp failed (exit ${exitCode}): ${stderr.trim().slice(0, 200)}`);
   }
 
@@ -41,7 +42,7 @@ async function runYtDlp(videoId: string): Promise<ResolvedFormats> {
   const formats: YtDlpFormat[] = info.formats ?? [];
   const resolved = pickFormats(formats);
 
-  console.log(
+  log(
     `[yt-dlp] Resolved ${videoId}: video=${resolved.video?.height ?? "none"}p, audio=${resolved.audio?.abr ?? resolved.audio?.tbr ?? "none"}kbps, muxed=${resolved.muxed?.height ?? "none"}p`
   );
 
@@ -52,14 +53,13 @@ export async function getFormats(videoId: string): Promise<ResolvedFormats> {
   // Check cache
   const cached = cache.get(videoId);
   if (cached && cached.expiresAt > Date.now()) {
-    console.log(`[yt-dlp] Cache hit for ${videoId}`);
     return cached.formats;
   }
 
   // Deduplicate concurrent requests for the same video
   const existing = inflight.get(videoId);
   if (existing) {
-    console.log(`[yt-dlp] Dedup — waiting for in-flight request for ${videoId}`);
+    log(`[yt-dlp] Dedup — waiting for in-flight request for ${videoId}`);
     return existing;
   }
 

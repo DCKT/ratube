@@ -1,3 +1,5 @@
+import { log, logError } from "./logger";
+
 /** Fetch an upstream URL and pipe back with range support. */
 export async function proxyStream(
   upstreamUrl: string,
@@ -15,6 +17,7 @@ export async function proxyStream(
   const upstream = await fetch(upstreamUrl, { headers, redirect: "follow" });
 
   if (!upstream.ok && upstream.status !== 206) {
+    logError(`[proxy] Upstream error: ${upstream.status}`);
     return new Response(`Upstream error: ${upstream.status}`, { status: 502 });
   }
 

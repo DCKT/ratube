@@ -39,7 +39,7 @@ const STORAGE_KEYS = {
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const [baseUrl, setBaseUrlState] = useState("http://192.168.1.73:8888");
-  const [proxyUrl, setProxyUrlState] = useState("http://192.168.1.73:3002");
+  const [proxyUrl, setProxyUrlState] = useState("http://192.168.1.197:3000");
   const [channels, setChannels] = useState<SavedChannel[]>([
     {
       id: "UCKpOpDFWOZQ2QXjDkVU3WTQ",
